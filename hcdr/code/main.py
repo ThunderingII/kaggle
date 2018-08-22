@@ -39,7 +39,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 def timer(title):
     t0 = time.time()
     yield
-    print("{} - done in {:.0f}s".format(title, time.time() - t0))
+    log.info("{} - done in {:.0f}s".format(title, time.time() - t0))
 
 
 # One-hot encoding for categorical columns with get_dummies
@@ -56,7 +56,7 @@ def application_train_test(num_rows=None, nan_as_category=False):
     # Read data and merge
     df = pd.read_csv('../data/origin_data/application_train.csv', nrows=num_rows)
     test_df = pd.read_csv('../data/origin_data/application_test.csv', nrows=num_rows)
-    print("Train samples: {}, test samples: {}".format(len(df), len(test_df)))
+    log.info("Train samples: {}, test samples: {}".format(len(df), len(test_df)))
     df = df.append(test_df).reset_index()
     # Optional: Remove 4 applications with XNA CODE_GENDER (train set)
     df = df[df['CODE_GENDER'] != 'XNA']
@@ -263,7 +263,7 @@ def kfold_lightgbm(df, num_folds, stratified=False, debug=False):
     # Divide in training/validation and test data
     train_df = df[df['TARGET'].notnull()]
     test_df = df[df['TARGET'].isnull()]
-    print("Starting LightGBM. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
+    log.info("Starting LightGBM. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
     del df
     gc.collect()
     # Cross validation model
@@ -308,11 +308,11 @@ def kfold_lightgbm(df, num_folds, stratified=False, debug=False):
         fold_importance_df["importance"] = clf.feature_importances_
         fold_importance_df["fold"] = n_fold + 1
         feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
-        print('Fold %2d AUC : %.6f' % (n_fold + 1, roc_auc_score(valid_y, oof_preds[valid_idx])))
+        log.info('Fold %2d AUC : %.6f' % (n_fold + 1, roc_auc_score(valid_y, oof_preds[valid_idx])))
         del clf, train_x, train_y, valid_x, valid_y
         gc.collect()
 
-    print('Full AUC score %.6f' % roc_auc_score(train_df['TARGET'], oof_preds))
+    log.info('Full AUC score %.6f' % roc_auc_score(train_df['TARGET'], oof_preds))
     # Write submission file and plot feature importance
     if not debug:
         test_df['TARGET'] = sub_preds
@@ -339,31 +339,31 @@ def main(debug=False):
     df = application_train_test(num_rows)
     with timer("Process bureau and bureau_balance"):
         bureau = bureau_and_balance(num_rows)
-        print("Bureau df shape:", bureau.shape)
+        log.info("Bureau df shape:{}".format(bureau.shape))
         df = df.join(bureau, how='left', on='SK_ID_CURR')
         del bureau
         gc.collect()
     with timer("Process previous_applications"):
         prev = previous_applications(num_rows)
-        print("Previous applications df shape:", prev.shape)
+        log.info("Previous applications df shape:{}".format(prev.shape))
         df = df.join(prev, how='left', on='SK_ID_CURR')
         del prev
         gc.collect()
     with timer("Process POS-CASH balance"):
         pos = pos_cash(num_rows)
-        print("Pos-cash balance df shape:", pos.shape)
+        log.info("Pos-cash balance df shape:{}".format(pos.shape))
         df = df.join(pos, how='left', on='SK_ID_CURR')
         del pos
         gc.collect()
     with timer("Process installments payments"):
         ins = installments_payments(num_rows)
-        print("Installments payments df shape:", ins.shape)
+        log.info("Installments payments df shape:{}".format(ins.shape))
         df = df.join(ins, how='left', on='SK_ID_CURR')
         del ins
         gc.collect()
     with timer("Process credit card balance"):
         cc = credit_card_balance(num_rows)
-        print("Credit card balance df shape:", cc.shape)
+        log.info("Credit card balance df shape:{}".format(cc.shape))
         df = df.join(cc, how='left', on='SK_ID_CURR')
         del cc
         gc.collect()
