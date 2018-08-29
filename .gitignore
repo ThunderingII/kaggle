@@ -109,3 +109,5 @@ venv.bak/
 .idea/*
 origin_data/*
 test*.py
+
+origin_data/

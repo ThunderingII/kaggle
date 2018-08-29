@@ -28,9 +28,9 @@ from sklearn.model_selection import KFold, StratifiedKFold
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-import util.log_util as log_util
+import util.base_util as util
 
-log = log_util.get_logger()
+log = util.get_logger()
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
