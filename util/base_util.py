@@ -59,7 +59,7 @@ logger_dict = {}
 
 # 打log使用
 def get_logger(filename='STD_LOG.log', logger_name='STD_LOG', level=logging.DEBUG, file_level=logging.INFO,
-               fstr='%(asctime)s - %(name)s - %(levelname)s - %(message)s'):
+               fstr='%(asctime)s - %(name)s - %(levelname)s - %(message)s           |-| %(filename)s-%(funcName)s-%(lineno)s'):
     global logger_dict
     key = md5('{}-{}-{}-{}-{}'.format(filename, logger_name, level, file_level, fstr))
 

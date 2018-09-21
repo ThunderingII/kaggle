@@ -60,8 +60,6 @@ def data_prepare():
 
     df_train['current_service'] = label
 
-    label2index(df_train, 'current_service')
-
     return df_train, df_test
 
 
@@ -94,11 +92,7 @@ def dummies(df, columns):
             df.drop(columns=[c], inplace=True)
 
 
-encode_map = {}
-decode_list = []
-
-
-def multi_classes2label_index(y_pre_origin, class_size):
+def one_hot2label_index(y_pre_origin, class_size):
     y_pre = np.zeros([len(y_pre_origin), 1])
     log.info('data shape {},data length {}'.format(y_pre_origin.shape, len(y_pre_origin)))
     for i, d in enumerate(y_pre_origin):
@@ -112,9 +106,14 @@ def multi_classes2label_index(y_pre_origin, class_size):
     return y_pre
 
 
+encode_map = {}
+decode_list = []
+
+
 # get label index from label's value
 def label2index(df, label_name, inplace=True):
     global decode_list
+    global encode_map
     decode_list = sorted(list(df[label_name].value_counts().index))
 
     label_size = len(decode_list)
@@ -123,10 +122,11 @@ def label2index(df, label_name, inplace=True):
         encode_map[decode_list[i]] = i
         log.info('{} \'s index is {}'.format(decode_list[i], i))
     t = df[label_name]
-    t.apply(lambda x: encode_map[x])
+    t = t.apply(lambda x: encode_map[x])
     if inplace:
         df[label_name] = t
     print(df[label_name].value_counts())
+    log.info('-' * 100)
     return t
 
 

@@ -21,28 +21,25 @@ def nn_model(df_train, df_test):
 
 class FeatureNN():
 
-    def __init__(self, x, y, epoch=10, batch_size=30):
+    def __init__(self, x_train, y_train, x_val, y_val, epoch=10, batch_size=30):
 
         self.epoch = epoch
         self.batch_size = batch_size
-        self.x = x['train']
-        self.y = y['train']
-        self.x_val = x['val']
-        self.y_val = y['val']
-        self.input_size = self.x.shape[1]
-        self.label_size = self.y.shape[1]
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_val = x_val
+        self.y_val = y_val
+        self.input_size = self.x_train.shape[1]
 
         # config
         self.f1_out_size = 100
-        self.f2_out_size = 300
-        self.f3_out_size = 15
+        self.f2_out_size = 100
+        self.class_num = 15
 
         self._init_graph()
 
     def _init_graph(self):
-        '''
-        Init a tensorflow Graph containing: input data, variables, model, loss, optimizer
-        '''
+
         self.graph = tf.Graph()
         with self.graph.as_default():  # , tf.device('/cpu:0'):
             os.environ['CUDA_VISIBLE_DEVICES'] = '1'
@@ -52,22 +49,23 @@ class FeatureNN():
 
             # with tf.name_scope('input_data'):
             self.input_x = tf.placeholder(tf.float32, shape=[None, self.input_size], name='train_data')
-            self.labels = tf.placeholder(tf.float32, shape=[None, self.label_size], name='train_labels')
+
+            self.labels = tf.placeholder(tf.int32, shape=[None], name='train_labels')
 
             # Model.
-            # with tf.name_scope('id_embedding'):
+            # with tf.name_scope('model'):
 
             self.f1_out = self.__add_hidden_fc_layer(self.input_x, self.input_size, self.f1_out_size,
                                                      tf.nn.relu, name='fc1', batch_normalization=False)
             self.f2_out = self.__add_hidden_fc_layer(self.f1_out, self.f1_out_size, self.f2_out_size, tf.nn.relu,
                                                      name='fc2', batch_normalization=False)
-            self.y_pre = self.__add_hidden_fc_layer(self.f2_out, self.f2_out_size, self.f3_out_size, None, False,
+            self.y_pre = self.__add_hidden_fc_layer(self.f2_out, self.f2_out_size, self.class_num, None, False,
                                                     name='fc_out', batch_normalization=False)
 
             self.y_softmax = tf.nn.softmax(self.y_pre)
             # self.loss = tf.reduce_mean(-tf.reduce_sum(self.labels * tf.log(self.y_softmax), 1))
             self.loss = tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.labels, logits=self.y_pre, name='loss'))
+                tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.y_pre, name='loss'))
 
             # Optimizer
             self.optimizer = tf.train.AdamOptimizer(learning_rate=0.01, name='optimizer').minimize(
@@ -106,10 +104,14 @@ class FeatureNN():
     def __add_hidden_fc_layer(self, fc_in, in_dim, out_dim, activate_func=None, has_bias=True,
                               name='basic hidden fc layer', batch_normalization=True):
         if has_bias:
-            bias = tf.Variable(tf.constant(value=0.001, shape=[out_dim]), name='{}_b'.format(name))
+            bias = tf.Variable(tf.constant(value=0.01, shape=[out_dim]), name='{}_b'.format(name))
         else:
             bias = tf.Variable(tf.zeros([out_dim], name='{}_b'.format(name)))
-        w = tf.Variable(self.__he_normal([in_dim, out_dim]), name='{}_w'.format(name))
+        # w = tf.Variable(self.__he_normal([in_dim, out_dim]), name='{}_w'.format(name))
+        w = tf.get_variable(name='{}_w'.format(name),
+                            shape=[in_dim, out_dim],
+                            initializer=tf.contrib.layers.xavier_initializer(),
+                            dtype=tf.float32)
         wx_plus_b = tf.matmul(fc_in, w) + bias
         if batch_normalization:
             wx_plus_b = self.__bn_layer(wx_plus_b)
@@ -122,33 +124,30 @@ class FeatureNN():
         log.info('train_begin')
 
         for epoch in range(self.epoch):
-            total_batch = int(len(self.x) / self.batch_size)
+            total_batch = int(len(self.x_train) / self.batch_size)
             # Loop over all batches
             for i in range(total_batch):
                 # generate a batch data
-                batch_xs = {}
-                # start_index = np.random.randint(0, len(self.X_train['x']) - self.batch_size)
                 start_index = i * self.batch_size
-                batch_xs['x'] = self.x.iloc[start_index:(start_index + self.batch_size)]
-                batch_xs['y'] = self.y.iloc[start_index:(start_index + self.batch_size)]
+                end_index = start_index + self.batch_size
 
-                feed_dict = {self.input_x: batch_xs['x'],
-                             self.labels: batch_xs['y']}
+                feed_dict = {self.input_x: self.x_train.iloc[start_index:end_index],
+                             self.labels: self.y_train.iloc[start_index:end_index]}
                 loss, opt = self.sess.run((self.loss, self.optimizer), feed_dict=feed_dict)
-
                 if (i + 1) % 1000 == 0:
-                    print(batch_xs['y'].values)
                     log.info('epoch:{} batch:{} finished! loss:{}'.format(epoch, i + 1, loss))
 
             y_softmax = self.sess.run(self.y_softmax, feed_dict={self.input_x: self.x_val})
 
-            print('y_val shape {},y_pre shape {}'.format(self.y_val.shape, y_softmax.shape))
-
+            log.info('y_val shape {},y_pre shape {}'.format(self.y_val.shape, y_softmax.shape))
+            print(self.x_val[:20])
+            print(self.y_val[:20])
+            log.info('-' * 100)
             print(y_softmax[:20])
 
             # link prediction test
-            f1 = f1_score(data_process.multi_classes2label_index(self.y_val, 15),
-                          data_process.multi_classes2label_index(y_softmax, 15), average='macro')
+            f1 = f1_score(self.y_val,
+                          data_process.one_hot2label_index(y_softmax, 15), average='macro')
             log.info('Epoch:%04d f1 :%f score:%f' % (epoch + 1, f1, 1 - f1 ** 2))
 
         log.info('train finished')
@@ -165,9 +164,9 @@ class FeatureNN():
 if __name__ == '__main__':
     df_train, df_test = data_process.data_prepare()
 
-    df_label = pd.DataFrame()
+    df_label = data_process.label2index(df_train, LABEL_COLUMN_NAME)
 
-    df_label[LABEL_COLUMN_NAME] = df_train[LABEL_COLUMN_NAME]
+    print(df_train.iloc[:20, :])
 
     df_train.drop([ID_COLUMN_NAME, LABEL_COLUMN_NAME], axis=1, inplace=True)
     df_test.drop([ID_COLUMN_NAME], axis=1, inplace=True)
@@ -178,13 +177,9 @@ if __name__ == '__main__':
     folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=1001)
 
     for i_fold, (train_idx, valid_idx) in enumerate(folds.split(df_train, df_label)):
-        data_process.dummies(df_label, [LABEL_COLUMN_NAME])
-
         x_train = df_train.iloc[train_idx, :]
-        y_train = df_label.iloc[train_idx, :]
         x_val = df_train.iloc[valid_idx, :]
-        y_val = df_label.iloc[valid_idx, :]
-
-        fn = FeatureNN({'train': x_train, 'val': x_val}, {'train': y_train, 'val': y_val})
-
+        y_train = df_label.iloc[train_idx]
+        y_val = df_label.iloc[valid_idx]
+        fn = FeatureNN(x_train, y_train, x_val, y_val)
         fn.train()
