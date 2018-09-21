@@ -21,7 +21,7 @@ def nn_model(df_train, df_test):
 
 class FeatureNN():
 
-    def __init__(self, x_train, y_train, x_val, y_val, epoch=10, batch_size=30):
+    def __init__(self, x_train, y_train, x_val, y_val, epoch=10, batch_size=1500):
 
         self.epoch = epoch
         self.batch_size = batch_size
@@ -35,8 +35,12 @@ class FeatureNN():
         self.f1_out_size = 100
         self.f2_out_size = 100
         self.class_num = 15
+        self.decay = 0.9
+        self.lr = 0.0001
 
         self._init_graph()
+
+    # def keras_model(self):
 
     def _init_graph(self):
 
@@ -62,13 +66,33 @@ class FeatureNN():
             self.y_pre = self.__add_hidden_fc_layer(self.f2_out, self.f2_out_size, self.class_num, None, False,
                                                     name='fc_out', batch_normalization=False)
 
+            # bias1 = tf.Variable(tf.constant(value=0.01, shape=[100]), name='{}_b'.format('fc1'))
+            # # w = tf.Variable(self.__he_normal([in_dim, out_dim]), name='{}_w'.format(name))
+            # w1 = tf.get_variable(name='{}_w'.format('fc1'), shape=[self.input_size, 100],
+            #                      initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
+            # wx_plus_b1 = tf.matmul(self.input_x, w1) + bias1
+            # h1 = tf.nn.relu(wx_plus_b1)
+            #
+            # bias2 = tf.Variable(tf.constant(value=0.01, shape=[100]), name='{}_b'.format('fc2'))
+            # # w = tf.Variable(self.__he_normal([in_dim, out_dim]), name='{}_w'.format(name))
+            # w2 = tf.get_variable(name='{}_w'.format('fc2'), shape=[100, 100],
+            #                      initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
+            # wx_plus_b2 = tf.matmul(h1, w2) + bias2
+            # h2 = tf.nn.relu(wx_plus_b2)
+            #
+            # bias3 = tf.Variable(tf.constant(value=0.01, shape=[15]), name='{}_b'.format('out'))
+            # # w = tf.Variable(self.__he_normal([in_dim, out_dim]), name='{}_w'.format(name))
+            # w3 = tf.get_variable(name='{}_w'.format('out'), shape=[100, 15],
+            #                      initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
+            # self.y_pre = tf.matmul(h2, w3) + bias3
+
             self.y_softmax = tf.nn.softmax(self.y_pre)
             # self.loss = tf.reduce_mean(-tf.reduce_sum(self.labels * tf.log(self.y_softmax), 1))
             self.loss = tf.reduce_mean(
                 tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.y_pre, name='loss'))
 
             # Optimizer
-            self.optimizer = tf.train.AdamOptimizer(learning_rate=0.01, name='optimizer').minimize(
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.lr, name='optimizer').minimize(
                 self.loss)
             # init
             init = tf.global_variables_initializer()
@@ -134,8 +158,12 @@ class FeatureNN():
                 feed_dict = {self.input_x: self.x_train.iloc[start_index:end_index],
                              self.labels: self.y_train.iloc[start_index:end_index]}
                 loss, opt = self.sess.run((self.loss, self.optimizer), feed_dict=feed_dict)
+                # if (i + 1) % 100 == 0:
+                #     self.lr *= self.decay
+
                 if (i + 1) % 1000 == 0:
-                    log.info('epoch:{} batch:{} finished! loss:{}'.format(epoch, i + 1, loss))
+                    self.lr *= self.decay
+                    log.info('epoch:{} batch:{} finished! loss:{} lr:{}'.format(epoch, i + 1, loss, self.lr))
 
             y_softmax = self.sess.run(self.y_softmax, feed_dict={self.input_x: self.x_val})
 
@@ -144,11 +172,12 @@ class FeatureNN():
             print(self.y_val[:20])
             log.info('-' * 100)
             print(y_softmax[:20])
+            print(data_process.one_hot2label_index(y_softmax)[:20])
 
             # link prediction test
             f1 = f1_score(self.y_val,
-                          data_process.one_hot2label_index(y_softmax, 15), average='macro')
-            log.info('Epoch:%04d f1 :%f score:%f' % (epoch + 1, f1, 1 - f1 ** 2))
+                          data_process.one_hot2label_index(y_softmax), average=None)
+            log.info('Epoch:{:8d} f1 :{} score:{:6.4f}'.format(epoch + 1, f1, np.mean(f1) ** 2))
 
         log.info('train finished')
 
@@ -162,6 +191,7 @@ class FeatureNN():
 
 
 if __name__ == '__main__':
+
     df_train, df_test = data_process.data_prepare()
 
     df_label = data_process.label2index(df_train, LABEL_COLUMN_NAME)
@@ -181,5 +211,20 @@ if __name__ == '__main__':
         x_val = df_train.iloc[valid_idx, :]
         y_train = df_label.iloc[train_idx]
         y_val = df_label.iloc[valid_idx]
+
+        # model = tf.keras.models.Sequential([
+        #     tf.keras.layers.Flatten(),
+        #     tf.keras.layers.Dense(200, activation=tf.nn.relu),
+        #     tf.keras.layers.Dense(400, activation=tf.nn.relu),
+        #     tf.keras.layers.Dropout(0.2),
+        #     tf.keras.layers.Dense(15, activation=tf.nn.softmax)
+        # ])
+        # model.compile(optimizer='adam',
+        #               loss='sparse_categorical_crossentropy',
+        #               metrics=['accuracy'])
+        #
+        # model.fit(x_train.values, y_train.values, epochs=5)
+        # model.evaluate(x_val.values, y_val.values)
+
         fn = FeatureNN(x_train, y_train, x_val, y_val)
         fn.train()

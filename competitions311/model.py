@@ -22,8 +22,8 @@ log = get_logger()
 
 
 def data_prepare():
-    df_train = pd.read_csv('data/train.csv')
-    df_test = pd.read_csv('data/test.csv')
+    df_train = pd.read_csv('origin_data/train.csv')
+    df_test = pd.read_csv('origin_data/test.csv')
 
     # None process
     none_list = ['age', '2_total_fee', '3_total_fee']

@@ -11,8 +11,8 @@ log = get_logger()
 
 
 def data_prepare():
-    df_train = pd.read_csv('data/train.csv')
-    df_test = pd.read_csv('data/test.csv')
+    df_train = pd.read_csv('origin_data/train.csv')
+    df_test = pd.read_csv('origin_data/test.csv')
 
     # None process
     none_list = ['age', '2_total_fee', '3_total_fee']
@@ -92,17 +92,19 @@ def dummies(df, columns):
             df.drop(columns=[c], inplace=True)
 
 
-def one_hot2label_index(y_pre_origin, class_size):
-    y_pre = np.zeros([len(y_pre_origin), 1])
-    log.info('data shape {},data length {}'.format(y_pre_origin.shape, len(y_pre_origin)))
-    for i, d in enumerate(y_pre_origin):
+def one_hot2label_index(y_pre_origin):
+    y_pre_np = np.array(y_pre_origin)
+    class_size = y_pre_np.shape[1]
+    y_pre = np.zeros([len(y_pre_np), 1], dtype=np.int32)
+    log.info('data shape {},data length {}'.format(y_pre_np.shape, len(y_pre_np)))
+    for index, d in enumerate(y_pre_np):
         max = d[0]
         max_i = 0
         for i in range(1, class_size):
             if d[i] > max:
                 max = d[i]
                 max_i = i
-        y_pre[i][0] = max_i
+        y_pre[index][0] = max_i
     return y_pre
 
 
