@@ -10,15 +10,44 @@ import os
 import json
 
 
+class TimeInfo():
+    def __init__(self):
+        self.t0 = time.time()
+        self.tag_dict = {}
+
+    def now(self):
+        return time.time()
+
+    def get_delay_t0(self):
+        return time.time() - self.t0
+
+    def get_t0(self):
+        return self.t0
+
+    def start(self, tag='default'):
+        self.tag_dict[tag] = time.time()
+
+    def get_delay(self, tag='default'):
+        return time.time() - self.tag_dict[tag]
+
+    def rest(self, tag='default'):
+        self.tag_dict[tag] = time.time()
+
+    def end(self, tag='default'):
+        d = time.time() - self.tag_dict[tag]
+        del self.tag_dict[tag]
+        return d
+
+
 # 上下文管理器，主要用于计时使用
 @contextmanager
 def timer(title=''):
-    t0 = time.time()
+    ti = TimeInfo()
     if title == '':
-        title = str(t0)
+        title = str(ti.get_t0())
     get_logger().info("|{}| - begin".format(title))
-    yield
-    get_logger().info("|{}| - done in {:.4f}s".format(title, time.time() - t0))
+    yield ti
+    get_logger().info("|{}| - done in {:.4f}s".format(title, ti.get_delay_t0()))
 
 
 def md5(s):

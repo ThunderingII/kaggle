@@ -111,3 +111,8 @@ origin_data/*
 test*.py
 
 origin_data/
+result*.csv
+nohup.out
+hyperparameters.csv
+lgbm_importances01.png
+model_trials.pkl
