@@ -1,6 +1,11 @@
 #encoding:utf-8
 import sys, pickle, os, random
-import numpy as np 
+# Suppress warnings 
+import warnings
+warnings.filterwarnings('ignore')
+
+import numpy as np
+import pandas as pd
 ## tags, BIO
 tag2label = {"90063345": 0,  
              "89950166": 1, "89950167": 2,

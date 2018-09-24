@@ -12,14 +12,15 @@ parser = argparse.ArgumentParser(description='mul-dnn for recommendation')
 parser.add_argument('--train_data', type=str, default='./data', help='train data source')
 parser.add_argument('--test_data', type=str, default='./data', help='test data source')
 parser.add_argument('--batch_size', type=int, default=128, help='#sample of each minibatch')
-parser.add_argument('--epoch', type=int, default=40, help='#epoch of training')
+parser.add_argument('--epoch', type=int, default=20, help='#epoch of training')
 parser.add_argument('--optimizer', type=str, default='Adam', help='Adam/Adadelta/Adagrad/RMSProp/Momentum/SGD')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--beta', type=float, default=0.001, help='l2 beta')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout keep_prob')
 parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
-parser.add_argument('--hidden_dim', type=int, default=10, help='#dim of hidden state')
-
+parser.add_argument('--hidden_dim1', type=int, default=60, help='#dim of hidden state')
+parser.add_argument('--hidden_dim2', type=int, default=30, help='#dim of hidden state')
+parser.add_argument('--hidden_dim3', type=int, default=10, help='#dim of hidden state')
 args = parser.parse_args()
 ## paths setting
 paths = {}
@@ -42,14 +43,17 @@ get_logger(log_path).info(str(args))
 
 #training model
 train_path = os.path.join('.',args.train_data,'train_data.in')
+test_path = os.path.join('.',args.test_data,'test_data.in')
 train_data = read_corpus(train_path)
 
 print("train data: {}".format(len(train_data)))
 train = train_data[:600000]
-test = train_data[600000:]
-model = mul_dnn(args, tag2label, paths, config=config)
+val = train_data[600000:]
+input_size = len(train[0][0])
+print('input_size',input_size)
+model = mul_dnn(args, tag2label, input_size, paths, config=config)
 model.build_graph()
-model.train(train=train, dev=test)
+model.train(train=train, dev=val)
 
 
 

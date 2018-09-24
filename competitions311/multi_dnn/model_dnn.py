@@ -7,11 +7,13 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import f1_score
 class mul_dnn(object):
 	"""docstring for mul_dnn"""
-	def __init__(self, args, tag2label, paths, config):
+	def __init__(self, args, tag2label, input_size, paths, config):
 		self.batch_size = args.batch_size
 		self.epoch_num = args.epoch
 		self.optimier = args.optimizer
-		self.hidden_dim = args.hidden_dim
+		self.hidden_dim1 = args.hidden_dim1
+		self.hidden_dim2 = args.hidden_dim2
+		self.hidden_dim3 = args.hidden_dim3
 		self.dropout_keep_prob = args.dropout
 		self.beta = args.beta
 		self.lr = args.lr
@@ -19,6 +21,7 @@ class mul_dnn(object):
 		self.optimizer = args.optimizer
 		self.tag2label = tag2label
 		self.num_tags = len(tag2label)
+		self.input_size = input_size
 
 		self.config = config
 		self.model_path = paths['model_path']
@@ -34,51 +37,27 @@ class mul_dnn(object):
 		self.init_op()
 	def mul_dnn_op(self):
 		with tf.variable_scope('multi_dnn'):
-			W1 = tf.get_variable(name='W1',
-								shape=[43, self.hidden_dim],
-								initializer=tf.contrib.layers.xavier_initializer(),
-								dtype=tf.float32)
-			b1 = tf.get_variable(name='b1',
-								shape=[self.hidden_dim],
-								initializer=tf.zeros_initializer(),
-                                dtype=tf.float32)
-			W2 = tf.get_variable(name='W2',
-								shape=[self.hidden_dim, self.hidden_dim],
-								initializer=tf.contrib.layers.xavier_initializer(),
-								dtype=tf.float32)
-			b2 = tf.get_variable(name='b2',
-								shape=[self.hidden_dim],
-								initializer=tf.zeros_initializer(),
-                                dtype=tf.float32)
-			W3 = tf.get_variable(name='W3',
-								shape=[self.hidden_dim, self.hidden_dim],
-								initializer=tf.contrib.layers.xavier_initializer(),
-								dtype=tf.float32)
-			b3 = tf.get_variable(name='b3',
-								shape=[self.hidden_dim],
-								initializer=tf.zeros_initializer(),
-                                dtype=tf.float32)
-
-			W_out = tf.get_variable(name='W_out',
-								shape=[self.hidden_dim, self.num_tags],
-								initializer=tf.contrib.layers.xavier_initializer(),
-								dtype=tf.float32)
-			b_out = tf.get_variable(name='b_out',
-								shape=[self.num_tags],
-								initializer=tf.zeros_initializer(),
-                                dtype=tf.float32)
-			hidden_layer1 = tf.matmul(self.features, W1) + b1
-			h1 = tf.nn.relu(hidden_layer1)
-
-			hidden_layer2 = tf.matmul(h1, W2) + b2
-			h2 = tf.nn.relu(hidden_layer2)
-
-			hidden_layer3 = tf.matmul(h2, W3) + b3
-			h3 = tf.nn.relu(hidden_layer3)
-
-			self.logits = tf.matmul(h3, W_out) + b_out
-			#L2
+			self.f1_out, W1 = self.hiden_fc_layer(self.features, self.input_size, self.hidden_dim1, activate_func=tf.nn.relu, name='fc1')
+			self.f2_out, W2 = self.hiden_fc_layer(self.f1_out, self.hidden_dim1, self.hidden_dim2, activate_func=tf.nn.relu, name='fc2')
+			self.f3_out, W3 = self.hiden_fc_layer(self.f2_out, self.hidden_dim2, self.hidden_dim3, activate_func=tf.nn.relu, name='fc3')
+			self.logits, W_out = self.hiden_fc_layer(self.f3_out, self.hidden_dim3, self.num_tags, activate_func=None, name='out')
+			
+			#L2 normalization
 			self.regularization = tf.nn.l2_loss(W1) + tf.nn.l2_loss(W2) + tf.nn.l2_loss(W3) + tf.nn.l2_loss(W_out)
+	def hiden_fc_layer(self, input_x, input_size, output_size, activate_func=None, name='basic hidden fc layer'):
+		W = tf.get_variable(name='{}_w'.format(name), 
+							shape=[input_size,output_size],
+							initializer=tf.contrib.layers.xavier_initializer(),
+							dtype=tf.float32)
+		b = tf.get_variable(name='{}_b'.format(name),
+							shape=[output_size],
+							initializer=tf.zeros_initializer(),
+							dtype=tf.float32)
+		h_layer = tf.matmul(input_x,W) + b
+		if activate_func is not None:
+			return activate_func(h_layer), W
+		return h_layer, W
+
 
 	def add_placeholders(self):
 		self.features = tf.placeholder(tf.float32, shape=[None,43], name='features')
@@ -131,7 +110,7 @@ class mul_dnn(object):
 			self.add_summary(sess)
 
 			for epoch in range(self.epoch_num):
-				print('=====epoch====',epoch)
+				print('=====epoch====',epoch + 1)
 				self.run_one_epoch(sess, train, dev, self.tag2label, epoch, saver)
 
 
