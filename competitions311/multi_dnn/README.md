@@ -1,54 +1,15 @@
-{
- "cells": [
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "# multi_model\n",
-    "## train\n",
-    "* python main.py --mode=train\n",
-    "\n",
-    "## test\n",
-    "* python main.py --mode=test --demo_model=1537768833\n",
-    "\n",
-    "其中1537768833在data_save/,是已经训练好的模型参数；\n",
-    "\n",
-    "data_save/1537768833/checkpoints/ 存放的是模型参数；\n",
-    "\n",
-    "data_save/1537768833/results/ 存放的是模型训练时的log信息,以及预测结果;\n",
-    "\n",
-    "data_save/1537768833/summaries/ 可使用tensorboard查看，如：在data_save/1537768833/目录下，运行：tensorboard --logdir=./summaries,即可在浏览器查看loss曲线图和相关信息；"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {
-    "collapsed": true
-   },
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.6.3"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 2
-}
+
+# multi_model
+## train
+* python main.py --mode=train
+
+## test
+* python main.py --mode=test --demo_model=1537768833
+
+其中1537768833在data_save/,是已经训练好的模型参数；
+
+data_save/1537768833/checkpoints/ 存放的是模型参数；
+
+data_save/1537768833/results/ 存放的是模型训练时的log信息,以及预测结果;
+
+data_save/1537768833/summaries/ 可使用tensorboard查看，如：在data_save/1537768833/目录下，运行：tensorboard --logdir=./summaries,即可在浏览器查看loss曲线图和相关信息；
