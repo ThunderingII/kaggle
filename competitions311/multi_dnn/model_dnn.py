@@ -1,7 +1,7 @@
 import numpy as np
 import os, time, sys 
 import tensorflow as tf
-from data_process import batch_yield 
+from data_process import batch_yield, batch_yield_test, save_result 
 from utils import get_logger
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import f1_score
@@ -19,6 +19,7 @@ class mul_dnn(object):
 		self.lr = args.lr
 		self.clip_grad = args.clip
 		self.optimizer = args.optimizer
+		self.test_data_path = args.test_data
 		self.tag2label = tag2label
 		self.num_tags = len(tag2label)
 		self.input_size = input_size
@@ -112,7 +113,21 @@ class mul_dnn(object):
 			for epoch in range(self.epoch_num):
 				print('=====epoch====',epoch + 1)
 				self.run_one_epoch(sess, train, dev, self.tag2label, epoch, saver)
+	def test(self,test):
+		print('============test=========')
+		saver = tf.train.Saver()
+		with tf.Session(config=self.config) as sess:
+			saver.restore(sess, self.model_path)
+			label_list = []
+			for feat in batch_yield_test(test, self.batch_size, self.tag2label):
+				label_list_ = self.predict_one_batch(sess, feat)
+				label_list.extend(label_list_)
 
+			label2tag = {}
+			for tag, label in self.tag2label.items():
+				label2tag[label] = tag
+			tag = [label2tag[label] for label in label_list]
+			save_result(tag, self.test_data_path)
 
 	def run_one_epoch(self, sess, train, dev, tag2label, epoch, saver):
 		num_batches = (len(train) + self.batch_size - 1) // self.batch_size
@@ -130,7 +145,7 @@ class mul_dnn(object):
 			if step + 1 == num_batches:
 				saver.save(sess, self.model_path, global_step=step_num)
 
-		self.logger.info('===========validation / test===========')
+		self.logger.info('===========validation / test============')
 		label_list_dev = self.dev_one_epoch(sess, dev)
 		accuracy, precision, recall, f1 = self.evaluate(label_list_dev, dev, epoch)
 		print ("accuracy:%.5f,precision:%.5f,recall:%.5f, f1:%.5f" % (accuracy, precision, recall, f1))
@@ -158,10 +173,10 @@ class mul_dnn(object):
 		label_list = []
 		batches = batch_yield(dev, self.batch_size, self.tag2label)
 		for step, (feats, label) in enumerate(batches):
-			label_list_ = self.predict_one_batch(sess, feats, label)
+			label_list_ = self.predict_one_batch(sess, feats)
 			label_list.extend(label_list_)
 		return label_list
-	def predict_one_batch(self, sess, feats, label):
+	def predict_one_batch(self, sess, feats):
 		feed_dict = self.get_feed_dict(feats, dropout=1.0)
 		#print('====feed_dict====',feed_dict)
 		label_list = sess.run(self.pred_label, feed_dict=feed_dict)	
