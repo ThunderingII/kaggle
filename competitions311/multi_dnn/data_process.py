@@ -8,12 +8,10 @@ import numpy as np
 import pandas as pd
 tag2label = {"90063345": 0,  
              "89950166": 1, "89950167": 2,
-             "99999828":3, "89016252":4,
-             "99104722":5, "90109916":6,
-             "89950168":7, "99999827":8,
-             "99999826":9, "90155946":10,
-             "99999830":11, "99999825":12,
-             "89016253":13, "89016259":14
+             "99999828":3,  "90109916":4,
+             "89950168":5, "99999827":6,
+             "99999826":7, "90155946":8,
+             "99999830":9, "99999825":10
              }
 ID_COLUMN_NAME = 'user_id'
 LABEL_COLUMN_NAME = 'predict'
@@ -73,9 +71,8 @@ def batch_yield_test(data, batch_size, tag2label):
 	if len(feats) != 0:
 		yield feats
 
-def save_result(data, path):
+def save_result(data, path, submit_path):
 	csv_input = os.path.join('.',path,'test.csv')
-	csv_output = os.path.join('.',path,'submit_result.csv')
 	df_test = pd.read_csv(csv_input)
 	print('====shape df_test====',df_test.shape)
 	user_id_list = np.array(df_test[ID_COLUMN_NAME]).tolist()
@@ -83,10 +80,13 @@ def save_result(data, path):
 		print('test_data len error')
 		print('====len user_id_list===',len(user_id_list))
 		print('====data===',len(data))
-	result = {ID_COLUMN_NAME:user_id_list,
-				LABEL_COLUMN_NAME:data}
-	submit_csv = pd.DataFrame(result)
-	submit_csv.to_csv(csv_output, index = False)
+	submit = df_test[[ID_COLUMN_NAME]]
+	submit[LABEL_COLUMN_NAME] = data
+	submit.to_csv(submit_path, index = False)
+	# result = {ID_COLUMN_NAME:user_id_list,
+	# 			LABEL_COLUMN_NAME:data}
+	# submit_csv = pd.DataFrame(result)
+	# submit_csv.to_csv(csv_output, index = False)
 
 
 

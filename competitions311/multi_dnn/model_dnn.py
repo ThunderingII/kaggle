@@ -61,7 +61,7 @@ class mul_dnn(object):
 
 
 	def add_placeholders(self):
-		self.features = tf.placeholder(tf.float32, shape=[None,43], name='features')
+		self.features = tf.placeholder(tf.float32, shape=[None,self.input_size], name='features')
 		self.labels = tf.placeholder(tf.int32, shape=[None],name='labels')
 		self.dropout_pl = tf.placeholder(dtype=tf.float32, shape=[], name="dropout")
 		self.lr_pl = tf.placeholder(dtype=tf.float32, shape=[], name="lr")
@@ -127,7 +127,8 @@ class mul_dnn(object):
 			for tag, label in self.tag2label.items():
 				label2tag[label] = tag
 			tag = [label2tag[label] for label in label_list]
-			save_result(tag, self.test_data_path)
+			submit_path = os.path.join(self.result_path,'result.csv')
+			save_result(tag, self.test_data_path, submit_path)
 
 	def run_one_epoch(self, sess, train, dev, tag2label, epoch, saver):
 		num_batches = (len(train) + self.batch_size - 1) // self.batch_size
