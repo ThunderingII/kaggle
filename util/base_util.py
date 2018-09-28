@@ -88,6 +88,18 @@ def get_logger(filename='STD_LOG.log', logger_name='STD_LOG', level=logging.DEBU
     return logger_dict[key]
 
 
+def pickle_dump(o, f):
+    with timer('write obj to {}'.format(f)):
+        with open(f, mode='wb') as f:
+            pickle.dump(o, f)
+
+
+def pickle_load(f):
+    with timer('load obj from {}'.format(f)):
+        with open(f, mode='rb') as f:
+            return pickle.load(f)
+
+
 # 多进程工具
 class Worker(multiprocessing.Process):
     def __init__(self, target, *args, **kwargs):

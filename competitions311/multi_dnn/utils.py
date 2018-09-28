@@ -12,59 +12,6 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def get_entity(tag_seq, char_seq):
-    PER = get_PER_entity(tag_seq, char_seq)
-    LOC = get_LOC_entity(tag_seq, char_seq)
-    ORG = get_ORG_entity(tag_seq, char_seq)
-    return PER, LOC, ORG
-
-
-def get_PER_entity(tag_seq, char_seq):
-    length = len(char_seq)
-    PER = []
-    for i, (char, tag) in enumerate(zip(char_seq, tag_seq)):
-        if tag == 'B-PER':
-            if 'per' in locals().keys():
-                PER.append(per)
-                del per
-            per = char
-            if i+1 == length:
-                PER.append(per) 
-        if tag == 'I-PER':
-            per += char
-            if i+1 == length:
-                PER.append(per)
-        if tag not in ['I-PER', 'B-PER']:
-            if 'per' in locals().keys():
-                PER.append(per)
-                del per
-            continue
-    return PER
-
-
-def get_LOC_entity(tag_seq, char_seq):
-    length = len(char_seq)
-    LOC = []
-    for i, (char, tag) in enumerate(zip(char_seq, tag_seq)):
-        if tag == 'B-LOC':
-            if 'loc' in locals().keys():
-                LOC.append(loc)
-                del loc
-            loc = char
-            if i+1 == length:
-                LOC.append(loc)
-        if tag == 'I-LOC':
-            loc += char
-            if i+1 == length:
-                LOC.append(loc)
-        if tag not in ['I-LOC', 'B-LOC']:
-            if 'loc' in locals().keys():
-                LOC.append(loc)
-                del loc
-            continue
-    return LOC
-
-
 def get_ORG_entity(tag_seq, char_seq):
     length = len(char_seq)
     ORG = []
