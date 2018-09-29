@@ -73,6 +73,7 @@ def save_result(ids, labels, submit_path):
     df_test = pd.DataFrame()
     df_test[ID] = ids
     df_test[LABEL] = labels
+    df_test.columns = [ID, 'predict']
     print('====shape df_test====', df_test.shape)
     df_test.to_csv(submit_path, index=False)
 
