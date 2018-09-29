@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 import os, argparse, time, random
 from model_dnn import mul_dnn
-from utils import get_logger
+from util.base_util import get_logger
 from nn_prepare_data import read_corpus, load_label2index
 
 # session configuration
