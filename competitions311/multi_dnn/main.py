@@ -29,7 +29,7 @@ args = parser.parse_args()
 ## paths setting
 paths = {}
 timestamp = str(int(time.time())) if args.mode == 'train' else args.demo_model
-output_path = os.path.join('.', args.train_data + "_save", timestamp)
+output_path = os.path.join(args.train_data + "_save", timestamp)
 if not os.path.exists(output_path): os.makedirs(output_path)
 summary_path = os.path.join(output_path, "summaries")
 paths['summary_path'] = summary_path
@@ -45,16 +45,18 @@ log_path = os.path.join(result_path, "log.txt")
 paths['log_path'] = log_path
 get_logger(log_path).info(str(args))
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
 label2index_map, _ = load_label2index()
 print(label2index_map)
 # training model
-train_path = os.path.join('.', args.train_data, 'train_modified.csv')
-test_path = os.path.join('.', args.test_data, 'test_modified.csv')
+train_path = os.path.join(args.train_data, 'train_modified.csv')
+test_path = os.path.join(args.test_data, 'test_modified.csv')
 if args.mode == 'train':
     ids, train_data = read_corpus(train_path)
     print("train data: {}".format(len(train_data)))
-    train = train_data[:1000]
-    val = train_data[1000:1200]
+    train = train_data[:650000]
+    val = train_data[650000:]
     input_size = len(train.columns) - 1
     print('input_size', input_size)
     model = mul_dnn(args, label2index_map, input_size, paths, config=config)
